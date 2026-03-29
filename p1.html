@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- ✏️ EDIT: Change this to your name or studio name -->
+  <title>AH Rahi | 3D Product Visualizer</title>
+
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Icons (Font Awesome) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <style>
+    /* ==============================================
+       CSS VARIABLES — change these to adjust colors
+    =============================================== */
+    :root {
+      --bg:          #080808;
+      --bg-2:        #0f0f0f;
+      --bg-card:     #141414;
+      --bg-card-hover: #1c1c1c;
+      --border:      rgba(255,255,255,0.07);
+      --text:        #f0ede8;
+      --text-muted:  #6b6b6b;
+      --text-dim:    #a0a0a0;
+      --accent:      #c9a96e;      /* ✏️ EDIT: Gold accent — change this hex to change accent color */
+      --accent-rgb:  201, 169, 110;
+      --font-display: 'Cormorant', serif;
+      --font-body:    'Outfit', sans-serif;
+      --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    /* ==============================================
+       RESET & BASE
+    =============================================== */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-weight: 300;
+      line-height: 1.7;
+      overflow-x: hidden;
+      cursor: default;
+    }
+
+    /* Hide custom cursor on touch screens */
+    @media (hover: none) {
+      body { cursor: auto; }
+      #cursor, #cursor-follower { display: none; }
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+
+    /* ==============================================
+       CUSTOM CURSOR
+    =============================================== */
+    #cursor {
+      width: 8px; height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: width .2s, height .2s;
+    }
+    #cursor-follower {
+      width: 36px; height: 36px;
+      border: 1px solid rgba(var(--accent-rgb), 0.45);
+      border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: all .12s ease-out;
+    }
+    body.hovering #cursor          { width: 16px; height: 16px; }
+    body.hovering #cursor-follower { width: 56px; height: 56px; border-color: rgba(var(--accent-rgb), 0.7); }
+
+    /* ==============================================
+       LOADING SCREEN
+    =============================================== */
+    #loader {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      z-index: 9000;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 28px;
+      transition: opacity .8s ease, visibility .8s ease;
+    }
+    #loader.hidden { opacity: 0; visibility: hidden; }
+
+    .loader-logo {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 5vw, 3.2rem);
+      font-weight: 300;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      opacity: 0;
+      animation: fadeUp .8s ease .3s forwards;
+    }
+    .loader-logo span { color: var(--accent); }
+
+    .loader-bar-wrap {
+      width: min(280px, 70vw); height: 1px;
+      background: var(--border); overflow: hidden;
+      opacity: 0;
+      animation: fadeIn .5s ease .7s forwards;
+    }
+    .loader-bar { height: 100%; background: var(--accent); width: 0%; }
+
+    .loader-pct {
+      font-size: .7rem; letter-spacing: .25em;
+      color: var(--text-muted);
+      opacity: 0;
+      animation: fadeIn .5s ease .7s forwards;
+    }
+
+    /* ==============================================
+       NAVIGATION
+    =============================================== */
+    #nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 1000;
+      padding: 28px 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: padding .4s var(--ease), background .4s var(--ease);
+    }
+    #nav.scrolled {
+      padding: 18px 60px;
+      background: rgba(8,8,8,0.93);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: 1.35rem; font-weight: 400;
+      letter-spacing: .15em; text-transform: uppercase;
+    }
+    .nav-logo span { color: var(--accent); }
+
+    .nav-links {
+      display: flex; gap: 40px; list-style: none;
+    }
+    .nav-links a {
+      font-size: .72rem; letter-spacing: .18em;
+      text-transform: uppercase; color: var(--text-dim);
+      position: relative; transition: color .2s;
+    }
+    .nav-links a::after {
+      content: ''; position: absolute;
+      bottom: -4px; left: 0;
+      width: 0; height: 1px;
+      background: var(--accent);
+      transition: width .35s var(--ease);
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-links a:hover::after { width: 100%; }
+
+     /* ==============================================
+       PORTFOLIO SECTION
+    =============================================== */
+    #portfolio { background: var(--bg); }
+
+    .portfolio-top {
+      display: flex; justify-content: space-between;
+      align-items: flex-end; flex-wrap: wrap;
+      gap: 20px; margin-bottom: 56px;
+    }
+
+    .filters {
+      display: flex; gap: 4px; flex-wrap: wrap;
+    }
+    .flt {
+      padding: 8px 20px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-family: var(--font-body); font-size: .68rem;
+      letter-spacing: .15em; text-transform: uppercase;
+      cursor: pointer;
+      transition: background .2s, border-color .2s, color .2s;
+    }
+    .flt.active, .flt:hover {
+      background: var(--accent); border-color: var(--accent); color: #080808;
+    }
+
+    /* 3×3 grid */
+    .p-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+    }
+
+    .p-card {
+      position: relative; aspect-ratio: 4/3;
+      overflow: hidden; cursor: pointer;
+      background: var(--bg-card);
+      transition: opacity .35s, transform .35s;
+    }
+
+    /* ✏️ EDIT: Replace .card-ph divs with <img> tags to show your real images.
+       Example: <img src="images/project1.jpg" alt="Project Name" style="width:100%;height:100%;object-fit:cover;" />
+    */
+    .card-ph {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform .65s var(--ease);
+    }
+    .c1 .card-ph { background: linear-gradient(135deg,#1a1208,#2c2212); }
+    .c2 .card-ph { background: linear-gradient(135deg,#0c1620,#162438); }
+    .c3 .card-ph { background: linear-gradient(135deg,#120c1c,#201630); }
+    .c4 .card-ph { background: linear-gradient(135deg,#0c1a10,#162a1c); }
+    .c5 .card-ph { background: linear-gradient(135deg,#1a1208,#2c2212); }
+    .c6 .card-ph { background: linear-gradient(135deg,#1c0c0c,#2c1414); }
+    .c7 .card-ph { background: linear-gradient(135deg,#0c1620,#162438); }
+    .c8 .card-ph { background: linear-gradient(135deg,#141a0c,#202c10); }
+    .c9 .card-ph { background: linear-gradient(135deg,#1a1208,#2c2212); }
+
+    .ph-icon { font-size: 2.2rem; color: rgba(255,255,255,0.06); }
+
+    /* Hover overlay */
+    .card-ov {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(8,8,8,.95) 0%, rgba(8,8,8,.5) 50%, rgba(8,8,8,.08) 100%);
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 28px; opacity: 0;
+      transition: opacity .35s ease;
+    }
+    .p-card:hover .card-ov  { opacity: 1; }
+    .p-card:hover .card-ph  { transform: scale(1.06); }
+    .p-card:hover .card-img { transform: scale(1.06); }
+
+    .card-img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform .65s var(--ease);
+    }
+
+    .ov-cat  { font-size: .63rem; letter-spacing: .25em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+    .ov-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; line-height: 1.2; margin-bottom: 10px; }
+    .ov-desc  { font-size: .78rem; color: var(--text-dim); line-height: 1.6; }
+
+    .card-arr {
+      position: absolute; top: 22px; right: 22px;
+      width: 38px; height: 38px;
+      border: 1px solid rgba(255,255,255,0.12);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--accent); font-size: .75rem;
+      opacity: 0; transform: rotate(-45deg);
+      transition: opacity .3s, transform .3s;
+    }
+    .p-card:hover .card-arr { opacity: 1; transform: rotate(0deg); }
+
+    .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    margin: 20px; /* Gives it some space from the edges */
+    background-color: #c9a96e; /* This uses your existing purple/blue color */
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.back-link:hover {
+    background-color: var(--text); /* Changes color when you hover */
+    transform: translateX(-5px); /* Makes it "pop" slightly to the left */
+  }
+
+  /*lebel colour chang */
+  .section-label {
+ display: flex; align-items: center; gap: 12px;  
+  font-size: .80rem; letter-spacing: .35em;   
+   text-transform: uppercase; color: #c9a96e;
+   margin-bottom: 16px; }
+
+   .section-title {
+     font-family: var(--font-display); 
+     font-size: clamp(2.6rem, 5.5vw, 5.2rem);
+     font-weight: 300; 
+     line-height: 1.05;
+    color: #c9a96e;  }
+
+    /* ==============================================
+       RESPONSIVE — MOBILE (≤768px)
+    =============================================== */
+    @media (max-width: 768px) {
+      section { padding: 70px 24px; }
+      #hero { padding: 0 24px 60px; }
+      #nav, #nav.scrolled { padding: 18px 24px; }
+      #footer { padding: 32px 24px; flex-direction: column; align-items: flex-start; }
+
+      .nav-toggle { display: flex; }
+      .nav-links  { display: none; }
+      .mobile-menu { display: flex; }
+
+      .s-grid { grid-template-columns: 1fr; }
+      .f-row  { grid-template-columns: 1fr; }
+      .about-stats { grid-template-columns: repeat(3,1fr); gap: 12px; }
+      .scroll-hint { display: none; }
+    }
+
+    @media (max-width: 480px) {
+      .p-grid     { grid-template-columns: 1fr; }
+      .hero-cta   { flex-direction: column; align-items: flex-start; }
+      .about-stats { grid-template-columns: 1fr 1fr; }
+    }
+   
+    </style>
+</head>
+
+<!-- =========================================================
+       PORTFOLIO
+  ========================================================== -->
+  <body>
+
+    <a href="portfolio.html" class="back-link">
+        <i class="fa-solid fa-arrow-left"></i> Back to Gallery
+    </a>
+
+    <section id="portfolio">
+
+
+
+
+
+  <section id="portfolio">
+    <div class="portfolio-top fi">
+      <div>
+        <div class="section-label">--- Selected Work ---</div>
+        <h2 class="section-title"> <em>Breackdown</em></h2>
+      </div>
+
+      <!-- Filter buttons — linked to data-category on each card -->
+      <div class="filters">
+        <button class="flt active" data-filter="all">All</button>
+        <button class="flt" data-filter="Final Animation">Final Animation</button>
+        <button class="flt" data-filter="process">Process</button>
+        <button class="flt" data-filter="Renders">Renders</button>
+        <button class="flt" data-filter="Topology">Topology</button>
+      </div>
+    </div>
+
+    <!--
+    ✏️ HOW TO ADD YOUR IMAGES:
+    For each card, replace the <div class="card-ph ..."> block with:
+      <img class="card-img" src="images/your-file.jpg" alt="Project Name" />
+    Also update ov-cat (category), ov-title (project name), and ov-desc (short description).
+    To link a card to YouTube, wrap the whole card in <a href="YOUR_YOUTUBE_LINK" target="_blank">.
+    -->
+    <div class="p-grid">
+
+      <!-- Card 1 -->
+      <div class="p-card c1 fi d1" data-category="furiture">
+        <div class="card-ph"><i class="fa-solid fa-cube ph-icon"></i></div>
+        <div class="card-ov">
+          <div class="ov-cat">Furniture</div>
+          <div class="ov-title">Modern Lounge Chair</div>
+          <div class="ov-desc">Photorealistic studio render with material variations</div>
+        </div>
+        <div class="card-arr"><i class="fa-solid fa-arrow-up-right"></i></div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="p-card c2 fi d2" data-category="tech">
+        <div class="card-ph"><i class="fa-solid fa-laptop ph-icon"></i></div>
+        <div class="card-ov">
+          <div class="ov-cat">Tech Product</div>
+          <div class="ov-title">Wireless Earbuds</div>
+          <div class="ov-desc">360° turntable animation with exploded view</div>
+        </div>
+        <div class="card-arr"><i class="fa-solid fa-arrow-up-right"></i></div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="p-card c3 fi d3" data-category="toys">
+        <div class="card-ph"><i class="fa-solid fa-star ph-icon"></i></div>
+        <div class="card-ov">
+          <div class="ov-cat">Toy</div>
+          <div class="ov-title">Action Figure Series</div>
+          <div class="ov-desc">Packaging visualization & e-commerce product shots</div>
+        </div>
+        <div class="card-arr"><i class="fa-solid fa-arrow-up-right"></i></div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="p-card c4 fi d1" data-category="furniture">
+        <div class="card-ph"><i class="fa-solid fa-chair ph-icon"></i></div>
+        <div class="card-ov">
+          <div class="ov-cat">Furniture</div>
+          <div class="ov-title">Minimalist Dining Set</div>
+          <div class="ov-desc">Full room scene with lighting & material study</div>
+        </div>
+        <div class="card-arr"><i class="fa-solid fa-arrow-up-right"></i></div>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="p-card c5 fi d2" data-category="tech">
+        <div class="card-ph"><i class="fa-solid fa-mobile-screen ph-icon"></i></div>
+        <div class="card-ov">
+          <div class="ov-cat">Tech Product</div>
+          <div class="ov-title">Smart Speaker</div>
+          <div class="ov-desc">Hero render with cinematic lighting setup</div>
+        </div>
+        <div class="card-arr"><i class="fa-solid fa-arrow-up-right"></i></div>
+      </div>
+
+      <!-- Card 6 -->
+      <div class="p-card c6 fi d3" data-category="toys">
+        <div class="card-ph"><i class="fa-solid fa-puzzle-piece ph-icon"></i></div>
+        <div class="card-ov">
+          <div class="ov-cat">Toy</div>
+          <div class="ov-title">Building Blocks Set</div>
+          <div class="ov-desc">E-commerce ready product renders — multiple angles</div>
+        </div>
+        <div class="card-arr"><i class="fa-solid fa-arrow-up-right"></i></div>
+      </div>
+
+      <!-- Card 7 -->
+      <div class="p-card c7 fi d1" data-category="furniture">
+        <div class="card-ph"><i class="fa-solid fa-couch ph-icon"></i></div>
+        <div class="card-ov">
+          <div class="ov-cat">Furniture</div>
+          <div class="ov-title">Luxury Sofa Collection</div>
+          <div class="ov-desc">Fabric & material variation showcase for catalog</div>
+        </div>
+        <div class="card-arr"><i class="fa-solid fa-arrow-up-right"></i></div>
+      </div>
+
+      <!-- Card 8 -->
+      <div class="p-card c8 fi d2" data-category="tech">
+        <div class="card-ph"><i class="fa-solid fa-headphones ph-icon"></i></div>
+        <div class="card-ov">
+          <div class="ov-cat">Tech Product</div>
+          <div class="ov-title">Noise Cancelling Headphones</div>
+          <div class="ov-desc">Product story with close-up detail renders</div>
+        </div>
+        <div class="card-arr"><i class="fa-solid fa-arrow-up-right"></i></div>
+      
+    </body>
+</html>
