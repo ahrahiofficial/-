@@ -298,6 +298,15 @@
     .hero-content {
       position: relative; z-index: 2;
       max-width: 820px;
+
+      /* Add this media query at the end of your stylesheet */
+@media only screen and (max-width: 600px) {
+  .hero-glow {
+    /* This hides the image by overriding the existing rule */
+    background-image: none !important;
+  }
+
+      
     }
 
     .hero-eyebrow {
