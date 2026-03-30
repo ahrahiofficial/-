@@ -238,7 +238,7 @@
       position: absolute; z-index: 1;
       top: 25%; right: 12%;
       width: 520px; height: 520px;
-      background-image: url("images/1.png");
+      background-image: url("images/101.png");
       background-size: cover;
       background-position: center;
       border-radius: 0%;
@@ -262,38 +262,12 @@
           opacity: 1;
         }
       }
+    @media (max-width: 768px) {
+    .hero-glow {
+    display: none;
     }
-    /*  teblet responsib  */
-    @media (max-width: 1300px){
-      header{
-        padding: 1rem 0.5rem;
-      }
-
-      .content{
-        margin-top: 85%;
-      }
-      .hero-glow{
-        scale: 0.8;
-        top: -20%;
-        right: 2%;
-      }
-
-      /*  mobile responsive  */
-      @media (max-width: 768px){
-        header{
-          padding: 1rem 0.1rem;
-        }
-
-        nav{
-          display: none;
-        }
-
-        .hero-glow{
-          scale: 0.5;
-          top: -10%;
-          right: -17%;
-        }
-      }
+    }
+   
     }
     .hero-content {
       position: relative; z-index: 2;
